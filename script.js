@@ -1,3 +1,6 @@
+require("dotenv").config();
+
+const apiKey = process.env.API_KEY;
 document.addEventListener("DOMContentLoaded", getProducts);
 const productsContainer = document.getElementById("productsContainer");
 const cartContainer = document.getElementById("cartContainer");
@@ -154,7 +157,3 @@ modeToggle.addEventListener("click", toggleMode);
 function toggleMode() {
   document.body.classList.toggle("dark-mode");
 }
-
-
-
-
