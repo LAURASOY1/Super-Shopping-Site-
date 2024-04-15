@@ -1,16 +1,19 @@
 document.addEventListener("DOMContentLoaded", getProducts);
 const productsContainer = document.getElementById("productsContainer");
+const cartContainer = document.getElementById("cartContainer");
+const overlay = document.getElementById("overlay");
 
 const searchInput = document.getElementById("searchInput");
-const cartCount = document.querySelector(".icon-cart span");
+const cartCount = document.querySelector(".cart-count");
 const cartButton = document.querySelector(".icon-cart");
 const cartPopup = document.querySelector(".cart-popup");
 const closeCartButton = document.querySelector(".close-cart");
 let productsDisplayed = [];
-let allProducts = [];
 let cart = {};
+
 searchInput.addEventListener("input", searchProducts);
-cartButton.addEventListener("click", renderCart);
+cartButton.addEventListener("click", toggleCartPopup);
+
 async function getProducts() {
   try {
     const response = await fetch("https://fakestoreapi.com/products");
@@ -20,16 +23,6 @@ async function getProducts() {
   } catch (error) {
     console.error("Error fetching products:", error);
   }
-}
-
-function onLoad() {
-  // set cart from state after load
-  cart = history.state || {};
-}
-
-function onCartChanged(updatedCart) {
-  // push state in history whenever cart is changed
-  history.pushState(updatedCart, "cart");
 }
 
 function displayProducts(products) {
@@ -67,16 +60,16 @@ function createProductElement(product) {
   return productElement;
 }
 
-// Function to toggle cart popup visibility
 function toggleCartPopup() {
   cartPopup.classList.toggle("show");
+  overlay.classList.toggle("show");
+  if (cartPopup.classList.contains("show")) {
+    renderCart(); // Render cart items when popup is shown
+  }
 }
 
-// Event listener for cart button click
-cartButton.addEventListener("click", toggleCartPopup);
-
-// Event listener for close cart button click
 closeCartButton.addEventListener("click", toggleCartPopup);
+overlay.addEventListener("click", toggleCartPopup);
 
 function searchProducts(e) {
   const filteredProducts = productsDisplayed.filter((product) =>
@@ -84,55 +77,15 @@ function searchProducts(e) {
   );
   displayProducts(filteredProducts);
 }
-function createCartItemElement(item) {
-  const cartItemElement = document.createElement("div");
-  cartItemElement.classList.add("cart-item");
-
-  const namePriceWrapper = document.createElement("div");
-  namePriceWrapper.classList.add("name-price-wrapper");
-
-  const nameElement = document.createElement("p");
-  nameElement.textContent = item.title;
-
-  const priceElement = document.createElement("p");
-  priceElement.textContent = `Price: $${item.price}`;
-
-  const quantityElement = document.createElement("span");
-  quantityElement.textContent = `Quantity: ${item.quantity}`;
-
-  const removeButtonElement = document.createElement("button");
-  removeButtonElement.textContent = "Remove";
-  removeButtonElement.addEventListener("click", () => removeCartItem(item.id));
-
-  namePriceWrapper.appendChild(nameElement);
-  namePriceWrapper.appendChild(priceElement);
-
-  cartItemElement.appendChild(namePriceWrapper);
-  cartItemElement.appendChild(quantityElement);
-  cartItemElement.appendChild(removeButtonElement);
-
-  return cartItemElement;
-}
 
 function addToCart(product) {
   if (cart[product.id]) {
     cart[product.id].quantity++;
+    cart[product.id].totalPrice = cart[product.id].quantity * product.price;
   } else {
-    cart[product.id] = { ...product, quantity: 1 };
+    cart[product.id] = { ...product, quantity: 1, totalPrice: product.price };
   }
   updateCartCount();
-  renderCart();
-}
-
-function removeCartItem(productId) {
-  if (cart[productId]) {
-    cart[productId].quantity--;
-    if (cart[productId].quantity <= 0) {
-      delete cart[productId];
-    }
-    updateCartCount();
-    renderCart();
-  }
 }
 
 function updateCartCount() {
@@ -152,6 +105,48 @@ function renderCart() {
   });
 }
 
+function createCartItemElement(item) {
+  const cartItemElement = document.createElement("div");
+  cartItemElement.classList.add("cart-item");
+
+  const namePriceWrapper = document.createElement("div");
+  namePriceWrapper.classList.add("name-price-wrapper");
+
+  const nameElement = document.createElement("p");
+  nameElement.textContent = item.title;
+
+  const priceElement = document.createElement("p");
+  priceElement.textContent = `Price: $${item.totalPrice}`;
+
+  const quantityElement = document.createElement("span");
+  quantityElement.textContent = `Quantity: ${item.quantity}`;
+
+  const removeButtonElement = document.createElement("button");
+  removeButtonElement.textContent = "Remove";
+  removeButtonElement.addEventListener("click", () => removeCartItem(item.id));
+
+  namePriceWrapper.appendChild(nameElement);
+  namePriceWrapper.appendChild(priceElement);
+
+  cartItemElement.appendChild(namePriceWrapper);
+  cartItemElement.appendChild(quantityElement);
+  cartItemElement.appendChild(removeButtonElement);
+
+  return cartItemElement;
+}
+
+function removeCartItem(productId) {
+  if (cart[productId]) {
+    cart[productId].quantity--;
+    cart[productId].totalPrice -= cart[productId].price;
+    if (cart[productId].quantity <= 0) {
+      delete cart[productId];
+    }
+    updateCartCount();
+    renderCart();
+  }
+}
+
 const modeToggle = document.getElementById("modeToggle");
 
 modeToggle.addEventListener("click", toggleMode);
@@ -159,3 +154,7 @@ modeToggle.addEventListener("click", toggleMode);
 function toggleMode() {
   document.body.classList.toggle("dark-mode");
 }
+
+
+
+
